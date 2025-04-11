@@ -1,6 +1,6 @@
 import express from 'express';
-
-import battleRoutes from './routes/battleRoutes';
+import './config/database';
+import battleRoutes from './routes/BattleRoutes';
 import cardRoutes from './routes/cardRoutes';
 import playerRoutes from './routes/playerRoutes';
 
