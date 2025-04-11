@@ -1,10 +1,8 @@
 import { Router } from 'express';
+import cardController from '../controllers/cardController';
 
 const router = Router();
 
-// Por enquanto, apenas uma rota básica
-router.get('/', (req, res) => {
-  res.json({ message: 'Rota de cards' });
-});
+router.get('/two', cardController.getTwoCards);
 
 export default router;

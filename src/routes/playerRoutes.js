@@ -1,10 +1,7 @@
 import { Router } from 'express';
-
+import playerController from '../controllers/playerController';
 const router = Router();
 
-// Por enquanto, apenas uma rota básica
-router.get('/', (req, res) => {
-  res.json({ message: 'Rota de players' });
-});
+router.get('/two', playerController.getTwoPlayers);
 
 export default router;
