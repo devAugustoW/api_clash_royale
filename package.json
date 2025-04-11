@@ -4,8 +4,7 @@
   "description": "API Clash Royale MongoDB",
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node -r sucrase/register server.js"
+    "dev": "nodemon server.js --exec sucrase-node"
   },
   "dependencies": {
     "express": "^4.18.2",
