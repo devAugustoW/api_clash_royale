@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 
 const playerController = {
+	// estudo de caso
   async getTwoPlayers(req, res) {
     try {
       const players = await mongoose.connection.db

@@ -8,7 +8,7 @@ const connectDB = async () => {
     await mongoose.connect(process.env.MONGO_URI, {
       dbName: 'clash_royale_db'
     });	
-    console.log('Conexão com MongoDB estabelecida com sucesso');
+    console.log('Conexão com MongoDB estabelecida com sucesso!');
 
   } catch (error) {
     console.error('Erro ao conectar ao MongoDB:', error.message);
