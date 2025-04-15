@@ -21,21 +21,21 @@ A aplicação calcula automaticamente a proporção de vitórias e derrotas em b
 
 ```javascript
 const results = await mongoose.connection.db
-					.collection('battles') 
-					.aggregate([
-						{
-							$match: {
-								battleTime: { $gte: start, $lte: end },
-								"cards.name": card.name
-							}
-						},
-						{
-							$group: {
-								_id: "$hasWon",
-								count: { $sum: 1 }
-							}
-						}
-					])
+	.collection('battles') 
+	.aggregate([
+		{
+			$match: {
+				battleTime: { $gte: start, $lte: end },
+				"cards.name": card.name
+			}
+		},
+		{
+			$group: {
+				_id: "$hasWon",
+				count: { $sum: 1 }
+			}
+		}
+	])
 ```
 - Acessa a collectin 'battles
 - Filtro para batalhas em um intervalo de tempo
@@ -51,13 +51,13 @@ const results = await mongoose.connection.db
 
 ```Javascript
 return res.json({
-				timeRange: {
-					startDate: start,
-					endDate: end
-				},
-				count: cardStats.length,
-				cards: cardStats
-			});
+	timeRange: {
+		startDate: start,
+		endDate: end
+	},
+	count: cardStats.length,
+	cards: cardStats
+});
 ```
 
 ## ✅ Pergunta 02
@@ -75,126 +75,126 @@ A função traz uma lista dos decks com maior taxa de vitória dentro do interva
 
 ```Javascript
 const topDecks = await mongoose.connection.db
-				.collection('battles')
-				.aggregate([
-					// 1. Filtrar pelo intervalo de datas
+	.collection('battles')
+	.aggregate([
+		// 1. Filtrar pelo intervalo de datas
+		{
+			$match: {
+				battleTime: {
+					$gte: start,
+					$lte: end
+				}
+			}
+		},
+		// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores, agora com o tag
+		{
+			$project: {
+				hasWon: 1,
+				deckData: [
+					// Deck do jogador principal
 					{
-						$match: {
-							battleTime: {
-								$gte: start,
-								$lte: end
-							}
-						}
-					},
-					// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores, agora com o tag
-					{
-						$project: {
-							hasWon: 1,
-							deckData: [
-								// Deck do jogador principal
-								{
-									playerTag: "$tag",
-									cards: {
-										$concatArrays: [
-											{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.id" } },
-											{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.id" } }
-										]
-									}
-								},
-								// Decks dos membros do time
-								{
-									$map: {
-										input: { $ifNull: ["$team", []] },
-										as: "player",
-										in: {
-											playerTag: "$$player.tag",
-											cards: {
-												$concatArrays: [
-													{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
-													{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
-												]
-											}
-										}
-									}
-								},
-								// Decks dos oponentes
-								{
-									$map: {
-										input: { $ifNull: ["$opponents", []] },
-										as: "player",
-										in: {
-											playerTag: "$$player.tag",
-											cards: {
-												$concatArrays: [
-													{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
-													{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
-												]
-											}
-										}
-									}
-								}
+						playerTag: "$tag",
+						cards: {
+							$concatArrays: [
+								{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.id" } },
+								{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.id" } }
 							]
 						}
 					},
-
-					// 3. Desaplainar a estrutura para processar cada deck individualmente
-					{ $unwind: "$deckData" },
-					// 4. Desaplainar novamente para processar arrays aninhados
-					{ $unwind: "$deckData" },
-
-					// 5. Remover duplicatas nos decks e ordenar IDs
+					// Decks dos membros do time
 					{
-						$project: {
-							hasWon: 1,
-							playerTag: "$deckData.playerTag",
-							deck: {
-								$sortArray: {
-									input: { $setUnion: ["$deckData.cards", []] },
-									sortBy: 1
+						$map: {
+							input: { $ifNull: ["$team", []] },
+							as: "player",
+							in: {
+								playerTag: "$$player.tag",
+								cards: {
+									$concatArrays: [
+										{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
+										{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
+									]
 								}
 							}
 						}
 					},
-
-					// 6. Agrupar por deck + playerTag e computar vitórias
+					// Decks dos oponentes
 					{
-						$group: {
-							_id: {
-								deck: "$deck",
-								playerTag: "$playerTag"
-							},
-							total: { $sum: 1 },
-							wins: {
-								$sum: { $cond: [{ $eq: ["$hasWon", true] }, 1, 0] }
+						$map: {
+							input: { $ifNull: ["$opponents", []] },
+							as: "player",
+							in: {
+								playerTag: "$$player.tag",
+								cards: {
+									$concatArrays: [
+										{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
+										{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
+									]
+								}
 							}
 						}
-					},
+					}
+				]
+			}
+		},
 
-					// 7. Calcular taxa de vitória
-					{
-						$project: {
-							deck: "$_id.deck",
-							playerTag: "$_id.playerTag",
-							_id: 0,
-							wins: 1,
-							total: 1,
-							winrate: { $divide: ["$wins", "$total"] }
-						}
-					},
+		// 3. Desaplainar a estrutura para processar cada deck individualmente
+		{ $unwind: "$deckData" },
+		// 4. Desaplainar novamente para processar arrays aninhados
+		{ $unwind: "$deckData" },
 
-					// 8. Filtrar por winrate mínima
-					{
-						$match: {
-							winrate: { $gt: threshold },
-							total: { $gte: 5 } // Adicionando um mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
-						}
-					},
+		// 5. Remover duplicatas nos decks e ordenar IDs
+		{
+			$project: {
+				hasWon: 1,
+				playerTag: "$deckData.playerTag",
+				deck: {
+					$sortArray: {
+						input: { $setUnion: ["$deckData.cards", []] },
+						sortBy: 1
+					}
+				}
+			}
+		},
 
-					// 9. Ordenar por taxa de vitória
-					{ $sort: { winrate: -1 } },
-					{ $limit: 20 }  // mostrar só os 10 melhores decks
-				])
-				.toArray();
+		// 6. Agrupar por deck + playerTag e computar vitórias
+		{
+			$group: {
+				_id: {
+					deck: "$deck",
+					playerTag: "$playerTag"
+				},
+				total: { $sum: 1 },
+				wins: {
+					$sum: { $cond: [{ $eq: ["$hasWon", true] }, 1, 0] }
+				}
+			}
+		},
+
+		// 7. Calcular taxa de vitória
+		{
+			$project: {
+				deck: "$_id.deck",
+				playerTag: "$_id.playerTag",
+				_id: 0,
+				wins: 1,
+				total: 1,
+				winrate: { $divide: ["$wins", "$total"] }
+			}
+		},
+
+		// 8. Filtrar por winrate mínima
+		{
+			$match: {
+				winrate: { $gt: threshold },
+				total: { $gte: 5 } // Adicionando um mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
+			}
+		},
+
+		// 9. Ordenar por taxa de vitória
+		{ $sort: { winrate: -1 } },
+		{ $limit: 20 }  // mostrar só os 10 melhores decks
+	])
+	.toArray();
 ```
 - Filtro por intervalo de tempo.
 - Criação de lista de decks.
@@ -210,14 +210,14 @@ Resposta enviada para o Front end
 
 ```Javascript
 return res.json({
-				timeRange: {
-					startDate: start,
-					endDate: end
-				},
-				winrateThreshold: threshold * 100 + '%',
-				count: enrichedDecks.length,
-				decks: enrichedDecks
-			});
+	timeRange: {
+		startDate: start,
+		endDate: end
+	},
+	winrateThreshold: threshold * 100 + '%',
+	count: enrichedDecks.length,
+	decks: enrichedDecks
+});
 ```
 
 ## ✅ Pergunta 03
@@ -237,56 +237,56 @@ return res.json({
 
  ```Javascript
  const pipeline = [
-				{
-					$match: {
-						battleTime: { $gte: start, $lte: end },
-						hasWon: false
-					}
-				},
-				{
-					$project: {
-						allCardNames: {
-							$setUnion: [
-								{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.name" } },
-								{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.name" } },
-								{
-									$reduce: {
-										input: { $ifNull: ["$team", []] },
-										initialValue: [],
-										in: {
-											$setUnion: [
-												"$$value",
-												{
-													$map: {
-														input: { $ifNull: ["$$this.cards", []] },
-														as: "c",
-														in: "$$c.name"
-													}
-												},
-												{
-													$map: {
-														input: { $ifNull: ["$$this.supportCards", []] },
-														as: "sc",
-														in: "$$sc.name"
-													}
-												}
-											]
+	{
+		$match: {
+			battleTime: { $gte: start, $lte: end },
+			hasWon: false
+		}
+	},
+	{
+		$project: {
+			allCardNames: {
+				$setUnion: [
+					{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.name" } },
+					{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.name" } },
+					{
+						$reduce: {
+							input: { $ifNull: ["$team", []] },
+							initialValue: [],
+							in: {
+								$setUnion: [
+									"$$value",
+									{
+										$map: {
+											input: { $ifNull: ["$$this.cards", []] },
+											as: "c",
+											in: "$$c.name"
+										}
+									},
+									{
+										$map: {
+											input: { $ifNull: ["$$this.supportCards", []] },
+											as: "sc",
+											in: "$$sc.name"
 										}
 									}
-								}
-							]
+								]
+							}
 						}
 					}
-				},
-				{
-					$match: {
-						allCardNames: { $all: comboArray }
-					}
-				},
-				{
-					$count: "loss_count"
-				}
-			];
+				]
+			}
+		}
+	},
+	{
+		$match: {
+			allCardNames: { $all: comboArray }
+		}
+	},
+	{
+		$count: "loss_count"
+	}
+];
 ```
 
 - Filtrar por intervalo de tempo e derrotas.
@@ -325,7 +325,138 @@ A função victoriesWithLessCrows é responsável por buscar vitórias em batalh
 - Controller `victoriesWithLessCrows`
 
 ```javascript
+const totalBattles = await mongoose.connection.db
+	.collection('battles')
+	.countDocuments();
 
+const battlesWithCard = await mongoose.connection.db
+	.collection('battles')
+	.countDocuments({
+		$or: [
+			{ "cards.id": cardIdNumber },
+			{ "team.cards.id": cardIdNumber }
+		]
+	});
+
+const winningBattles = await mongoose.connection.db
+	.collection('battles')
+	.countDocuments({
+		$or: [
+			{
+				"hasWon": true,
+				"cards.id": cardIdNumber
+			},
+			{
+				"isTeamBattle": true,
+				"team.cards.id": cardIdNumber
+			}
+		]
+	});
+
+const finalPipeline = [
+	// 1. Filtrar por vitórias com a carta específica
+	{
+		$match: {
+			$or: [
+				{
+					$and: [
+						{ hasWon: true },
+						{
+							$or: [
+								{ "cards.id": cardIdNumber },
+								{ "supportCards.id": cardIdNumber }
+							]
+						}
+					]
+				},
+				{
+					isTeamBattle: true,
+					team: {
+						$elemMatch: {
+							$or: [
+								{ "cards.id": cardIdNumber },
+								{ "supportCards.id": cardIdNumber }
+							]
+						}
+					}
+				}
+			]
+		}
+	},
+
+	// 2. Calcular troféus e torres
+	{
+		$project: {
+			battleTime: 1,
+			hasWon: 1,
+
+			winnerTrophies: "$startingTrophies",
+			loserTrophies: { $max: { $ifNull: ["$opponents.startingTrophies", [0]] } },
+
+			trophyPercentDifference: {
+				$cond: [
+					{ $gt: [{ $max: { $ifNull: ["$opponents.startingTrophies", [0]] } }, 0] },
+					{
+						$multiply: [
+							{
+								$divide: [
+									{
+										$subtract: [
+											{ $max: { $ifNull: ["$opponents.startingTrophies", [0]] } },
+											"$startingTrophies"
+										]
+									},
+									{ $max: { $ifNull: ["$opponents.startingTrophies", [0]] } }
+								]
+							},
+							100
+						]
+					},
+					0
+				]
+				},
+			
+			// Torres tomadas pelo oponente quando o jogador venceu
+			towersTakenByLoser: {
+				$max: {
+					$map: {
+						input: { $ifNull: ["$opponents", []] },
+						as: "opp",
+						in: { $ifNull: ["$$opp.crowns", 0] }
+					}
+				}
+			}
+		}
+	},
+
+	// 3. Filtrar batalhas onde o vencedor tinha X% menos troféus que o perdedor
+	{
+		$match: {
+			$expr: {
+				$and: [
+					// Garantir valores válidos
+					{ $gt: ["$winnerTrophies", 0] },
+					{ $gt: ["$loserTrophies", 0] },
+					
+					// Calcular se a diferença percentual é pelo menos o valor especificado
+					{ $gte: ["$trophyPercentDifference", trophyPercent] }
+				]
+			}
+		}
+	},
+
+	// 4. Filtrar por torres destruídas pelo perdedor
+	{
+		$match: {
+			towersTakenByLoser: towers
+		}
+	},
+
+	// 5. Contar resultados
+	{
+		$count: "totalVictories"
+	}
+	];
 ```
 
 - Identifica a carta no Banco de Dados
@@ -339,25 +470,26 @@ A função victoriesWithLessCrows é responsável por buscar vitórias em batalh
 - Contagem das vitórias que atendem aos critérios.
 
 ✅ Resultado: Retorna o número de vitórias que atendem a todos os critérios.
+
 ```Javascript
 return res.json({
-				card: {
-					id: cardIdNumber,
-					name: cardExists.name,
-					iconUrl: cardExists.iconUrls?.medium || null
-				},
-				criteria: {
-					trophyDifference: `${trophyPercent}% menos troféus`,
-					matchDuration: `${duration} segundos`,
-					towersDestroyed: towers
-				},
-				statistics: {
-					totalBattles,
-					battlesWithCard,
-					winningBattles,
-					victoryCount: results.length > 0 ? results[0].totalVictories : 0
-				}
-			});
+	card: {
+		id: cardIdNumber,
+		name: cardExists.name,
+		iconUrl: cardExists.iconUrls?.medium || null
+	},
+	criteria: {
+		trophyDifference: `${trophyPercent}% menos troféus`,
+		matchDuration: `${duration} segundos`,
+		towersDestroyed: towers
+	},
+	statistics: {
+		totalBattles,
+		battlesWithCard,
+		winningBattles,
+		victoryCount: results.length > 0 ? results[0].totalVictories : 0
+	}
+});
 ```
 
 ## ✅ Pergunta 05
@@ -376,22 +508,22 @@ A função lista os combos de cartas com o tamanho especificado que atingiram a 
 
 ```Javascript
 const battles = await mongoose.connection.db
-            .collection('battles')
-            .find(
-                { 
-                    battleTime: { $gte: start, $lte: end },
-                    "cards": { $exists: true, $not: { $size: 0 } },
-                    $expr: { $gte: [{ $size: "$cards" }, size] } // Apenas batalhas com cartas suficientes
-                },
-                { 
-                    projection: { 
-                        hasWon: 1, 
-                        "cards.id": 1, 
-                        "cards.name": 1 
-                    } 
-                }
-            )
-            .toArray();
+	.collection('battles')
+	.find(
+			{ 
+					battleTime: { $gte: start, $lte: end },
+					"cards": { $exists: true, $not: { $size: 0 } },
+					$expr: { $gte: [{ $size: "$cards" }, size] } // Apenas batalhas com cartas suficientes
+			},
+			{ 
+					projection: { 
+							hasWon: 1, 
+							"cards.id": 1, 
+							"cards.name": 1 
+					} 
+			}
+	)
+	.toArray();
 ```
 - Filtra batalhas com base no tempo
 - Projeta os campos que devem ser incluídos no resultado da pesquisa
@@ -473,7 +605,7 @@ return {
 
 ## ✅ Combinações extras
 
-**Realizamos algumaas combinações extras para trazer informações gerais sobre as batalhas**
+### Realizamos algumaas combinações extras para trazer informações gerais sobre as batalhas
 
 - Listar todas as batalhas existem no Banco de Dados
 - Traz um histórico de batalhas
@@ -518,7 +650,7 @@ return res.json({
 	battles
 });
 ```
-**Dados quantitativos sobre a Collection Battle**
+## Dados quantitativos sobre a Collection Battle
 
 - Estatísticas gerais sobre as batalhas
 - Número total de batalhas
@@ -576,4 +708,205 @@ const stats = {
 };
 
 return res.json(stats);
+```
+
+## Cartas Mais ppulares
+
+Realizamos uma consulta para descobrir as 10 cartas mais usadas entre os 100 melhoresjogadores do Rankink
+
+- Rota `/popular`
+- Controller `getTopPopularCards`
+
+```Javascript
+const popularCards = await mongoose.connection.db
+	.collection('battles')
+	.aggregate([
+		// Filtrar os 100 melhores jogadores por currentGlobalRank
+		{
+			$match: {
+				currentGlobalRank: { $lte: 100 }
+			}
+		},
+		// Projetar todas as cartas
+		{
+			$project: {
+				allCards: {
+					$concatArrays: [
+						{ $ifNull: ["$cards", []] },
+						{
+							$reduce: {
+								input: { $ifNull: ["$team", []] },
+								initialValue: [],
+								in: {
+									$concatArrays: ["$$value", { $ifNull: ["$$this.cards", []] }]
+								}
+							}
+						},
+						{
+							$reduce: {
+								input: { $ifNull: ["$opponents", []] },
+								initialValue: [],
+								in: {
+									$concatArrays: ["$$value", { $ifNull: ["$$this.cards", []] }]
+								}
+							}
+						}
+					]
+				}
+			}
+		},
+		// Desconstrói o array para processar cada carta individualmente
+		{ $unwind: "$allCards" },
+		// Agrupa por ID da carta para contar frequência
+		{
+			$group: {
+				_id: "$allCards.id",
+				name: { $first: "$allCards.name" },
+				count: { $sum: 1 }
+			}
+		},
+		// Ordena por contagem (mais populares primeiro)
+		{ $sort: { count: -1 } },
+		// Limita aos 10 principais resultados
+		{ $limit: 10 },
+		// Adiciona informações extras como percentual de uso
+		{
+			$addFields: {
+				cardId: "$_id"
+			}
+		},
+		{
+			$project: {
+				_id: 0,
+				cardId: 1,
+				name: 1,
+				count: 1
+			}
+		}
+	])
+	.toArray();
+```
+- Filtra as batalhas entre os 100 melhores jogadores
+- Criar um Array com todas as casrtas usadas na batalha
+- Agrupa as cartas por ID 
+- Calcula a contagem de uso das cartas
+- Armazena o nome das cartas
+- Organiza exibição por cartas mais usadas
+- Limita a exibição para 10 resultados de pesquisa
+- Armazena em um objeto o Id , o nome e a contagem da carta para o Resultado da pesquisa
+
+✅ Resultado: A função fornece informações sobre as cartas mais populares entre os melhores jogadores
+
+```Javascript
+const result = popularCards.map(card => ({
+	...card,
+	elixirCost: cardMap[card.cardId]?.elixirCost || null,
+	rarity: cardMap[card.cardId]?.rarity || null,
+	iconUrl: cardMap[card.cardId]?.iconUrls?.medium || null
+}));
+
+return res.json({
+	count: result.length,
+	cards: result
+});
+```
+
+## Cartas Menos Populares
+
+Realizamos uma consulta para descobrir as 10 cartas menos usadas entre os 100 melhoresjogadores do Rankink
+
+- Rota `/least-popular`
+- Controller `getLeastPopularCards`
+
+```Javascript
+const leastPopularCards = await mongoose.connection.db
+	.collection('battles')
+	.aggregate([
+		// Filtrar 100 melhores jogadores por currentGlobalRank
+		{
+			$match: {
+				currentGlobalRank: { $lte: 100 }
+			}
+		},
+		// Projetar todas as cartas
+		{
+			$project: {
+				allCards: {
+					$concatArrays: [
+						{ $ifNull: ["$cards", []] },
+						{
+							$reduce: {
+								input: { $ifNull: ["$team", []] },
+								initialValue: [],
+								in: {
+									$concatArrays: ["$$value", { $ifNull: ["$$this.cards", []] }]
+								}
+							}
+						},
+						{
+							$reduce: {
+								input: { $ifNull: ["$opponents", []] },
+								initialValue: [],
+								in: {
+									$concatArrays: ["$$value", { $ifNull: ["$$this.cards", []] }]
+								}
+							}
+						}
+					]
+				}
+			}
+		},
+		// Desconstrói o array para processar cada carta individualmente
+		{ $unwind: "$allCards" },
+		// Agrupa por ID da carta para contar frequência
+		{
+			$group: {
+				_id: "$allCards.id",
+				name: { $first: "$allCards.name" },
+				count: { $sum: 1 }
+			}
+		},
+		// Ordenando em ordem ascendente (menos populares primeiro)
+		{ $sort: { count: 1 } },
+		// Limita aos 10 principais resultados
+		{ $limit: 10 },
+		// Adiciona informações extras
+		{
+			$addFields: {
+				cardId: "$_id"
+			}
+		},
+		{
+			$project: {
+				_id: 0,
+				cardId: 1,
+				name: 1,
+				count: 1
+			}
+		}
+	])
+	.toArray();
+
+```
+
+- Filtra pesquisa pelas batalhas com os  melhores jogadores
+- Agrupa todas as cartas de uma batalha em um Array
+- Agrupa as cartas por ID, Nome e contagem
+- Ordena a exibição por cartas menos usadas
+- Limita a exibição para  resultados de pesquisa
+
+✅ Resultado: A função fornece informações sobre as cartas menos usadas entre os melhores jogadores
+
+```Javascript
+const result = leastPopularCards.map(card => ({
+	...card,
+	elixirCost: cardMap[card.cardId]?.elixirCost || null,
+	rarity: cardMap[card.cardId]?.rarity || null,
+	iconUrl: cardMap[card.cardId]?.iconUrls?.medium || null
+}));
+
+return res.json({
+	count: result.length,
+	cards: result
+});
 ```
