@@ -12,6 +12,7 @@ Iniciamos os estudos da estrutura dos dados no MongoDB através das rotas: `/api
 
 ###  O que é necessário para responder esta pergunta:
 - **ID da carta (cardId)** a ser analisado
+- **Batalhas com a Carta**
 - **Data de início e fim** do intervalo desejado
 
 A aplicação calcula automaticamente a proporção de vitórias e derrotas em batalhas onde a carta foi utilizada, considerando apenas as partidas dentro do período informado.
@@ -75,126 +76,126 @@ A função traz uma lista dos decks com maior taxa de vitória dentro do interva
 
 ```Javascript
 const topDecks = await mongoose.connection.db
-	.collection('battles')
-	.aggregate([
-		// 1. Filtrar pelo intervalo de datas
-		{
-			$match: {
-				battleTime: {
-					$gte: start,
-					$lte: end
-				}
+.collection('battles')
+.aggregate([
+	// 1. Filtrar pelo intervalo de datas
+	{
+		$match: {
+			battleTime: {
+				$gte: start,
+				$lte: end
 			}
-		},
-		// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores, agora com o tag
-		{
-			$project: {
-				hasWon: 1,
-				deckData: [
-					// Deck do jogador principal
-					{
-						playerTag: "$tag",
-						cards: {
-							$concatArrays: [
-								{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.id" } },
-								{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.id" } }
-							]
-						}
-					},
-					// Decks dos membros do time
-					{
-						$map: {
-							input: { $ifNull: ["$team", []] },
-							as: "player",
-							in: {
-								playerTag: "$$player.tag",
-								cards: {
-									$concatArrays: [
-										{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
-										{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
-									]
-								}
-							}
-						}
-					},
-					// Decks dos oponentes
-					{
-						$map: {
-							input: { $ifNull: ["$opponents", []] },
-							as: "player",
-							in: {
-								playerTag: "$$player.tag",
-								cards: {
-									$concatArrays: [
-										{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
-										{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
-									]
-								}
-							}
-						}
+		}
+	},
+	// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores, agora com o tag
+	{
+		$project: {
+			hasWon: 1,
+			deckData: [
+				// Deck do jogador principal
+				{
+					playerTag: "$tag",
+					cards: {
+						$concatArrays: [
+							{ $map: { input: { $ifNull: ["$cards", []] }, as: "c", in: "$$c.id" } },
+							{ $map: { input: { $ifNull: ["$supportCards", []] }, as: "c", in: "$$c.id" } }
+						]
 					}
-				]
-			}
-		},
-
-		// 3. Desaplainar a estrutura para processar cada deck individualmente
-		{ $unwind: "$deckData" },
-		// 4. Desaplainar novamente para processar arrays aninhados
-		{ $unwind: "$deckData" },
-
-		// 5. Remover duplicatas nos decks e ordenar IDs
-		{
-			$project: {
-				hasWon: 1,
-				playerTag: "$deckData.playerTag",
-				deck: {
-					$sortArray: {
-						input: { $setUnion: ["$deckData.cards", []] },
-						sortBy: 1
-					}
-				}
-			}
-		},
-
-		// 6. Agrupar por deck + playerTag e computar vitórias
-		{
-			$group: {
-				_id: {
-					deck: "$deck",
-					playerTag: "$playerTag"
 				},
-				total: { $sum: 1 },
-				wins: {
-					$sum: { $cond: [{ $eq: ["$hasWon", true] }, 1, 0] }
+				// Decks dos membros do time
+				{
+					$map: {
+						input: { $ifNull: ["$team", []] },
+						as: "player",
+						in: {
+							playerTag: "$$player.tag",
+							cards: {
+								$concatArrays: [
+									{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
+									{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
+								]
+							}
+						}
+					}
+				},
+				// Decks dos oponentes
+				{
+					$map: {
+						input: { $ifNull: ["$opponents", []] },
+						as: "player",
+						in: {
+							playerTag: "$$player.tag",
+							cards: {
+								$concatArrays: [
+									{ $map: { input: { $ifNull: ["$$player.cards", []] }, as: "c", in: "$$c.id" } },
+									{ $map: { input: { $ifNull: ["$$player.supportCards", []] }, as: "c", in: "$$c.id" } }
+								]
+							}
+						}
+					}
+				}
+			]
+		}
+	},
+
+	// 3. Desaplainar a estrutura para processar cada deck individualmente
+	{ $unwind: "$deckData" },
+	// 4. Desaplainar novamente para processar arrays aninhados
+	{ $unwind: "$deckData" },
+
+	// 5. Remover duplicatas nos decks e ordenar IDs
+	{
+		$project: {
+			hasWon: 1,
+			playerTag: "$deckData.playerTag",
+			deck: {
+				$sortArray: {
+					input: { $setUnion: ["$deckData.cards", []] },
+					sortBy: 1
 				}
 			}
-		},
+		}
+	},
 
-		// 7. Calcular taxa de vitória
-		{
-			$project: {
-				deck: "$_id.deck",
-				playerTag: "$_id.playerTag",
-				_id: 0,
-				wins: 1,
-				total: 1,
-				winrate: { $divide: ["$wins", "$total"] }
+	// 6. Agrupar por deck + playerTag e computar vitórias
+	{
+		$group: {
+			_id: {
+				deck: "$deck",
+				playerTag: "$playerTag"
+			},
+			total: { $sum: 1 },
+			wins: {
+				$sum: { $cond: [{ $eq: ["$hasWon", true] }, 1, 0] }
 			}
-		},
+		}
+	},
 
-		// 8. Filtrar por winrate mínima
-		{
-			$match: {
-				winrate: { $gt: threshold },
-				total: { $gte: 5 } // Adicionando um mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
-			}
-		},
+	// 7. Calcular taxa de vitória
+	{
+		$project: {
+			deck: "$_id.deck",
+			playerTag: "$_id.playerTag",
+			_id: 0,
+			wins: 1,
+			total: 1,
+			winrate: { $divide: ["$wins", "$total"] }
+		}
+	},
 
-		// 9. Ordenar por taxa de vitória
-		{ $sort: { winrate: -1 } },
-		{ $limit: 20 }  // mostrar só os 10 melhores decks
-	])
-	.toArray();
+	// 8. Filtrar por winrate mínima
+	{
+		$match: {
+			winrate: { $gt: threshold },
+			total: { $gte: 5 } // Adicionando um mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
+		}
+	},
+
+	// 9. Ordenar por taxa de vitória
+	{ $sort: { winrate: -1 } },
+	{ $limit: 20 }  // mostrar só os 10 melhores decks
+])
+.toArray();
 ```
 - Filtro por intervalo de tempo.
 - Criação de lista de decks.
