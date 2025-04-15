@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const battleController = {
 	// estudo de caso
-	async getFirstFive(req, res) {
+	async getFirstOne(req, res) {
     try {
       // Acessando diretamente a collection sem um modelo predefinido
       const battles = await mongoose.connection.db

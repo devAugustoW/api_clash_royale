@@ -907,13 +907,6 @@ const cardController = {
 						}
 					]
 				});
-			
-			console.log("🎯 Parâmetros recebidos:", {
-				cardIdNumber,
-				trophyPercent,
-				duration,
-				towers
-			});
 
 			// Pipeline de agregação para encontrar vitórias que atendem aos critérios
 			const finalPipeline = [
@@ -1042,7 +1035,7 @@ const cardController = {
 				},
 				criteria: {
 					trophyDifference: `${trophyPercent}% menos troféus`,
-					matchDuration: `${duration} segundos (ignorado - campo não existe)`,
+					matchDuration: `${duration} segundos`,
 					towersDestroyed: towers
 				},
 				statistics: {
@@ -1058,38 +1051,6 @@ const cardController = {
 			return res.status(500).json({
 				error: 'Erro ao processar consulta de vitórias',
 				details: error.message
-			});
-		}
-	},
-
-	// Função para buscar todas as cartas com seus nomes e IDs
-	async getAllCards(req, res) {
-		try {
-			// Buscar todas as cartas da coleção, projetando apenas nome e ID
-			const cards = await mongoose.connection.db
-				.collection('cards')
-				.find({})
-				.project({ name: 1, id: 1, _id: 0 })
-				.sort({ name: 1 }) // Ordena alfabeticamente por nome
-				.toArray();
-			
-			// Verifica se foram encontradas cartas
-			if (cards.length === 0) {
-				return res.status(404).json({ 
-					message: 'Nenhuma carta encontrada no sistema' 
-				});
-			}
-			
-			// Retorna a lista de cartas
-			return res.json({
-				count: cards.length,
-				cards
-			});
-		} catch (error) {
-			console.error('Erro ao buscar lista de cartas:', error);
-			return res.status(500).json({ 
-				error: 'Erro ao buscar lista de cartas', 
-				details: error.message 
 			});
 		}
 	},
@@ -1158,8 +1119,6 @@ const cardController = {
 				)
 				.toArray();
 			
-			console.log(`Recuperadas ${battles.length} batalhas válidas no período`);
-			
 			// Mapa para armazenar informações dos combos (usando apenas IDs como chaves)
 			const comboMap = new Map();
 			
@@ -1224,9 +1183,6 @@ const cardController = {
 					console.log(`Combos acumulados até agora: ${comboMap.size}, gerados: ${combosTotais}`);
 				}
 			}
-			
-			console.log(`Processamento completo. ${battlesProcessed} batalhas analisadas.`);
-			console.log(`Combos únicos encontrados: ${comboMap.size} de ${combosTotais} gerados`);
 			
 			// Calcular taxa de vitória e filtrar por threshold
 			const comboResults = Array.from(comboMap.values())
@@ -1314,7 +1270,39 @@ const cardController = {
 				details: error.message 
 			});
 		}
-	}
+	},
+
+	// Função para buscar todas as cartas com seus nomes e IDs
+	async getAllCards(req, res) {
+		try {
+			// Buscar todas as cartas da coleção, projetando apenas nome e ID
+			const cards = await mongoose.connection.db
+				.collection('cards')
+				.find({})
+				.project({ name: 1, id: 1, _id: 0 })
+				.sort({ name: 1 }) // Ordena alfabeticamente por nome
+				.toArray();
+			
+			// Verifica se foram encontradas cartas
+			if (cards.length === 0) {
+				return res.status(404).json({ 
+					message: 'Nenhuma carta encontrada no sistema' 
+				});
+			}
+			
+			// Retorna a lista de cartas
+			return res.json({
+				count: cards.length,
+				cards
+			});
+		} catch (error) {
+			console.error('Erro ao buscar lista de cartas:', error);
+			return res.status(500).json({ 
+				error: 'Erro ao buscar lista de cartas', 
+				details: error.message 
+			});
+		}
+	},
 };
 
 export default cardController;
