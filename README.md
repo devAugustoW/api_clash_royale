@@ -1,5 +1,7 @@
 # API Clash Royale com MongoDB
 
+![Clash Royale Banner](https://supercell.com/images/c96611b5b4ccd331e2b4dcb797811894/1281/hero_bg_clashroyale.612fcf42.webp)
+
 Este projeto é uma API desenvolvida em Node.js que se comunica com um banco de dados MongoDB. A API fornece informações sobre o jogo Clash Royale, permitindo a extração de dados e estatísticas relevantes.
 
 ## Estudo das Collections Battles, Cards e Players
