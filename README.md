@@ -470,3 +470,110 @@ return {
 	).toFixed(2))
 };
 ```
+
+## ✅ Combinações extras
+
+**Realizamos algumaas combinações extras para trazer informações gerais sobre as batalhas**
+
+- Listar todas as batalhas existem no Banco de Dados
+- Traz um histórico de batalhas
+- Visão geral sobre cada batalha
+
+- Rota `/list`
+- Controller `getBattleList`
+
+```Javascript
+const battles = await mongoose.connection.db
+	.collection('battles')
+	.aggregate([
+		{ $limit: 15 },
+		{
+			$project: {
+				battleId: { $toString: "$_id" },
+				battleTime: 1,
+				// Jogador 1 (principal)
+				player1Id: "$tag",
+				player1Rank: "$currentGlobalRank",
+				player1HasWon: "$hasWon",
+				player1Crowns: "$crowns",
+				// Jogador 2 (oponente - primeiro da lista de oponentes)
+				player2Id: { $arrayElemAt: ["$opponents.tag", 0] },
+				player2Rank: { $arrayElemAt: ["$opponents.currentGlobalRank", 0] },
+				player2HasWon: { $cond: [{ $eq: ["$hasWon", true] }, false, true] }, // Lógica inversa ao player1
+				player2Crowns: { $arrayElemAt: ["$opponents.crowns", 0] }
+			}
+		},
+		{
+			$sort: { battleTime: -1 }  // Ordenando por horário da batalha (mais recente primeiro)
+		}
+	])
+	.toArray();
+```
+
+✅ Resultado: A função traz uma lista com visão geral sobre as batalhas, jogadores, vencedor e número de coroas de cada jogador
+
+```Javascript
+return res.json({
+	count: battles.length,
+	battles
+});
+```
+**Dados quantitativos sobre a Collection Battle**
+
+- Estatísticas gerais sobre as batalhas
+- Número total de batalhas
+- Intervalo de datas (data mais antiga e mais recente) das batalhas.
+
+- Rota `/stats`
+- Controller  `getBattlesStats`
+
+```Javascript
+const totalBattles = await mongoose.connection.db
+	.collection('battles')
+	.countDocuments();
+```
+- Conta a quantidade de batalhas na collection Battle
+
+```Javascript
+const dateStats = await mongoose.connection.db
+	.collection('battles')
+	.aggregate([
+		{
+			$group: {
+				_id: null,
+				oldestDate: { $min: "$battleTime" },
+				newestDate: { $max: "$battleTime" }
+			}
+		},
+		{
+			$project: {
+				_id: 0,
+				oldestDate: 1,
+				newestDate: 1
+			}
+		}
+	])
+	.toArray();
+```
+- Consulta para obter data mais antiga e data mais recente
+
+✅ Resultado: A função fornece informações primparias sobre as batalhas
+
+```Javascript
+const stats = {
+	totalBattles,
+	dateRange: dateStats.length > 0 ? {
+		oldestBattle: dateStats[0].oldestDate,
+		newestBattle: dateStats[0].newestDate,
+		daysSpan: dateStats[0].newestDate && dateStats[0].oldestDate ? 
+			Math.round((new Date(dateStats[0].newestDate) - new Date(dateStats[0].oldestDate)) / (1000 * 60 * 60 * 24)) : 
+			null
+	} : {
+		oldestBattle: null,
+		newestBattle: null,
+		daysSpan: null
+	}
+};
+
+return res.json(stats);
+```

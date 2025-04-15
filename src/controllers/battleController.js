@@ -73,44 +73,45 @@ const battleController = {
 		}
 	},
 
-  // Função para pegar uma lista de batalhas
-  async getBattleList(req, res) {
-    try {
-      const battles = await mongoose.connection.db
-        .collection('battles')
-        .aggregate([
-          { $limit: 15 },
-          {
-            $project: {
-              battleId: { $toString: "$_id" },
-              battleTime: 1,
-              // Jogador 1 (principal)
-              player1Id: "$tag",
-              player1Rank: "$currentGlobalRank",
-              player1HasWon: "$hasWon",
-              player1Crowns: "$crowns",
-              // Jogador 2 (oponente - primeiro da lista de oponentes)
-              player2Id: { $arrayElemAt: ["$opponents.tag", 0] },
-              player2Rank: { $arrayElemAt: ["$opponents.currentGlobalRank", 0] },
-              player2HasWon: { $cond: [{ $eq: ["$hasWon", true] }, false, true] }, // Lógica inversa ao player1
-              player2Crowns: { $arrayElemAt: ["$opponents.crowns", 0] }
-            }
-          },
-          {
-            $sort: { battleTime: -1 }  // Ordenando por horário da batalha (mais recente primeiro)
-          }
-        ])
-        .toArray();
-      
-      return res.json({
-        count: battles.length,
-        battles
-      });
-    } catch (error) {
-      console.error('Erro ao buscar lista de batalhas:', error);
-      return res.status(500).json({ error: 'Erro ao buscar lista de batalhas', details: error.message });
-    }
-  },
+	// Função para pegar uma lista de batalhas
+	async getBattleList(req, res) {
+		try {
+			const battles = await mongoose.connection.db
+				.collection('battles')
+				.aggregate([
+					{ $limit: 15 },
+					{
+						$project: {
+							battleId: { $toString: "$_id" },
+							battleTime: 1,
+							// Jogador 1 (principal)
+							player1Id: "$tag",
+							player1Rank: "$currentGlobalRank",
+							player1HasWon: "$hasWon",
+							player1Crowns: "$crowns",
+							// Jogador 2 (oponente - primeiro da lista de oponentes)
+							player2Id: { $arrayElemAt: ["$opponents.tag", 0] },
+							player2Rank: { $arrayElemAt: ["$opponents.currentGlobalRank", 0] },
+							player2HasWon: { $cond: [{ $eq: ["$hasWon", true] }, false, true] }, // Lógica inversa ao player1
+							player2Crowns: { $arrayElemAt: ["$opponents.crowns", 0] }
+						}
+					},
+					{
+						$sort: { battleTime: -1 }  // Ordenando por horário da batalha (mais recente primeiro)
+					}
+				])
+				.toArray();
+			
+			return res.json({
+				count: battles.length,
+				battles
+			});
+		} catch (error) {
+			console.error('Erro ao buscar lista de batalhas:', error);
+			return res.status(500).json({ error: 'Erro ao buscar lista de batalhas', details: error.message });
+		}
+	},
+
 };
 
 export default battleController;
