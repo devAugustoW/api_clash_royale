@@ -1205,14 +1205,20 @@ const cardController = {
 					...combo,
 					winRate: combo.victories / combo.totalBattles * 100
 				}))
-				.filter(combo => combo.winRate >= threshold * 100 && combo.totalBattles >= 5) // adicionar um mínimo de 5 batalhas
-				.sort((a, b) => b.winRate - a.winRate || b.totalBattles - a.totalBattles)
-				.slice(0, 10); // limitar a 10 resultados
+				.filter(combo => combo.winRate >= threshold * 100 && combo.totalBattles >= 5);
 			
-			console.log(`${comboResults.length} combos atendem aos critérios mínimos`);
+			// Armazene o total de combos que atendem ao critério
+			const totalMatchingCombos = comboResults.length;
+			
+			// Depois continue com a ordenação e o limite
+			const top10Combos = comboResults
+				.sort((a, b) => b.winRate - a.winRate || b.totalBattles - a.totalBattles)
+				.slice(0, 10);
+			
+			console.log(`${totalMatchingCombos} combos atendem aos critérios mínimos`);
 			
 			// Verificar resultados
-			if (comboResults.length === 0) {
+			if (top10Combos.length === 0) {
 				console.log('Nenhum resultado encontrado com os critérios especificados');
 				return res.status(404).json({
 					message: `Nenhum combo de ${size} cartas encontrado com taxa de vitória acima de ${(threshold * 100).toFixed(1)}% no período especificado`
@@ -1221,7 +1227,7 @@ const cardController = {
 			
 			// Coletar IDs de todas as cartas para buscar detalhes
 			const cardIds = new Set();
-			comboResults.forEach(result => {
+			top10Combos.forEach(result => {
 				result.cardIds.forEach(id => cardIds.add(id));
 			});
 			
@@ -1239,7 +1245,7 @@ const cardController = {
 			});
 			
 			// Enriquecer os resultados com detalhes das cartas
-			const enrichedResults = comboResults.map(result => {
+			const enrichedResults = top10Combos.map(result => {
 				const enrichedCombo = result.cardIds.map(cardId => ({
 					id: cardId,
 					name: cardMap[cardId]?.name || result.cardNames[result.cardIds.indexOf(cardId)] || 'Desconhecida',
@@ -1273,6 +1279,7 @@ const cardController = {
 				},
 				result: {
 					count: enrichedResults.length,
+					totalMatchingCombos: totalMatchingCombos, 
 					combos: enrichedResults
 				}
 			};
