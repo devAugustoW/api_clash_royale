@@ -508,7 +508,7 @@ const cardController = {
 			const threshold = parseFloat(winrateThreshold);
 			
 			// Pipeline de agregação 
-			const topDecks = await mongoose.connection.db
+			const result = await mongoose.connection.db
 				.collection('battles')
 				.aggregate([
 					// 1. Filtrar pelo intervalo de datas
@@ -624,11 +624,24 @@ const cardController = {
 						}
 					},
 					
-					// 9. Ordenar por taxa de vitória
-					{ $sort: { winrate: -1 } },
-					{ $limit: 20 }  // mostrar só os 10 melhores decks
+					// 9. Com facet para contagem
+					{
+						$facet: {
+							"decks": [
+								{ $sort: { winrate: -1 } },
+								{ $limit: 30 }
+							],
+							"totalCount": [
+								{ $count: "count" }
+							]
+						}
+					}
 				])
 				.toArray();
+			
+			// Extrair os arrays de decks e contagem
+			const topDecks = result[0]?.decks || [];
+			const totalMatchingDecks = result[0]?.totalCount[0]?.count || 0;
 			
 			// Buscar informações das cartas para enriquecer os resultados
 			const allCardIds = new Set();
@@ -682,6 +695,7 @@ const cardController = {
 				).toFixed(2))
 			}));
 			
+			// Retornar resultados
 			return res.json({
 				timeRange: {
 					startDate: start,
@@ -689,6 +703,7 @@ const cardController = {
 				},
 				winrateThreshold: threshold * 100 + '%',
 				count: enrichedDecks.length,
+				totalMatchingDecks: totalMatchingDecks,
 				decks: enrichedDecks
 			});
 		} catch (error) {
