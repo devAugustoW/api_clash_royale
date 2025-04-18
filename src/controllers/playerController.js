@@ -32,7 +32,7 @@ const playerController = {
         .collection('players')
         .countDocuments();
       
-      // Buscar estatísticas gerais usando agregação
+      // Buscar estatísticas gerais
       const playerStats = await mongoose.connection.db
         .collection('players')
         .aggregate([
@@ -141,12 +141,12 @@ const playerController = {
         tagWithHash = '#' + tag;
       }
       
-      // Primeiro, tentar buscar sem o #
+      // Tentar buscar sem o #
       let player = await mongoose.connection.db
         .collection('players')
         .findOne({ tag: formattedTag });
       
-      // Se não encontrar, tentar com o #
+      // Tentar com o #
       if (!player) {
         console.log("Jogador não encontrado sem #, tentando com #:", tagWithHash);
         player = await mongoose.connection.db
@@ -155,8 +155,7 @@ const playerController = {
       }
       
       if (!player) {
-        // Tente uma busca alternativa sem case-sensitivity em ambas as versões
-        
+        // Tentar sem case-sensitivity em ambas as versões
         const playerAlternative = await mongoose.connection.db
           .collection('players')
           .findOne({ 
@@ -175,7 +174,7 @@ const playerController = {
         });
       }
       
-      // Quando encontrar o jogador, enriquecer as informações das cartas
+      // Enriquecer as informações das cartas
       if (player) {
         
         // Verificar se o jogador tem cartas
@@ -206,7 +205,7 @@ const playerController = {
           
         }
         
-        // Fazer o mesmo para supportCards se existir
+        // Enriquecer SupportCards se existir
         if (player.supportCards && player.supportCards.length > 0) {
           const supportCardIds = player.supportCards.map(card => card.id);
           
@@ -235,6 +234,7 @@ const playerController = {
       
     } catch (error) {
       console.error('Erro ao buscar jogador por tag:', error);
+			
       return res.status(500).json({ 
         error: 'Erro ao buscar jogador por tag', 
         details: error.message 

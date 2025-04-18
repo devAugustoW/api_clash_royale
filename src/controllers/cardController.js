@@ -18,26 +18,27 @@ const cardController = {
 				count: cards.length,
 				cards
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar cards:', error);
 			return res.status(500).json({ error: 'Erro ao buscar cards', details: error.message });
+
 		}
 	},
 
 	// Função para buscar as 10 cartas mais populares
 	async getTopPopularCards(req, res) {
 		try {
-			// Adaptando o pipeline Python para MongoDB/Node.js
+			// Conexão, agregação
 			const popularCards = await mongoose.connection.db
 				.collection('battles')
 				.aggregate([
-					// Filtrar os 100 melhores jogadores por currentGlobalRank
+					// Filtrar pelos 100 melhores jogadores por currentGlobalRank
 					{
 						$match: {
 							currentGlobalRank: { $lte: 100 }
 						}
 					},
-					// Projetar todas as cartas
 					{
 						$project: {
 							allCards: {
@@ -75,11 +76,11 @@ const cardController = {
 							count: { $sum: 1 }
 						}
 					},
-					// Ordena por contagem (mais populares primeiro)
+					// Ordena por contagem (mais populares)
 					{ $sort: { count: -1 } },
 					// Limita aos 10 principais resultados
 					{ $limit: 10 },
-					// Adiciona informações extras como percentual de uso
+					// Informações extras como percentual de uso
 					{
 						$addFields: {
 							cardId: "$_id"
@@ -129,6 +130,7 @@ const cardController = {
 				count: result.length,
 				cards: result
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar cartas populares:', error);
 			return res.status(500).json({
@@ -138,7 +140,7 @@ const cardController = {
 		}
 	},
 
-	// Função  estatísticas de vitórias/derrotas por carta em um intervalo de tempo
+	// Função estatísticas de vitórias/derrotas por carta em um intervalo de tempo
 	async getCardStats(req, res) {
 		try {
 			// Pegar parâmetros de intervalo de data
@@ -221,12 +223,15 @@ const cardController = {
 				count: cardStats.length,
 				cards: cardStats
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar estatísticas de cartas:', error);
+
 			return res.status(500).json({
 				error: 'Erro ao buscar estatísticas de cartas',
 				details: error.message
 			});
+
 		}
 	},
 
@@ -334,18 +339,21 @@ const cardController = {
 				count: result.length,
 				cards: result
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar cartas menos populares:', error);
 			return res.status(500).json({
 				error: 'Erro ao buscar cartas menos populares',
 				details: error.message
 			});
+
 		}
 	},
 
-	// Resgata imagem e pipe-line com porcentagem de vitórias e derrotas
+	// Função para buscar porcentagem de vitórias e derrotas de cada carta
 	async getCardStatsOptimized(req, res) {
 		try {
+			// Recupera os dados da chamada
 			const { startDate, endDate } = req.query;
 
 			if (!startDate || !endDate) {
@@ -357,7 +365,7 @@ const cardController = {
 			const start = new Date(startDate);
 			const end = new Date(endDate);
 
-			// Pipeline otimizado que processa todas as cartas de uma vez
+			// Conexão e agregação
 			const cardStats = await mongoose.connection.db
 				.collection('battles')
 				.aggregate([
@@ -379,7 +387,7 @@ const cardController = {
 							count: { $sum: 1 }
 						}
 					},
-					// Agrupar para organizar estatísticas por carta
+					// Agrupar as estatísticas por carta
 					{
 						$group: {
 							_id: {
@@ -493,7 +501,7 @@ const cardController = {
 	// Função para encontrar decks com alta taxa de vitória
 	async getTopDecks(req, res) {
 		try {
-			// Obter parâmetros
+			// Recuperar dados da chamada
 			const { startDate, endDate, winrateThreshold = 0.6 } = req.query;
 
 			if (!startDate || !endDate) {
@@ -507,7 +515,7 @@ const cardController = {
 			const end = new Date(endDate);
 			const threshold = parseFloat(winrateThreshold);
 
-			// Pipeline de agregação 
+			// Conexão e Agregação
 			const result = await mongoose.connection.db
 				.collection('battles')
 				.aggregate([
@@ -520,7 +528,7 @@ const cardController = {
 							}
 						}
 					},
-					// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores, agora com o tag
+					// 2. Criar uma lista de decks combinando cards + supportCards para todos os jogadores com o tag
 					{
 						$project: {
 							hasWon: 1,
@@ -571,9 +579,9 @@ const cardController = {
 						}
 					},
 
-					// 3. Desaplainar a estrutura para processar cada deck individualmente
+					// 3. desdobrar a estrutura para processar cada deck individualmente
 					{ $unwind: "$deckData" },
-					// 4. Desaplainar novamente para processar arrays aninhados
+					// 4. desdobrar novamente para processar arrays aninhados
 					{ $unwind: "$deckData" },
 
 					// 5. Remover duplicatas nos decks e ordenar IDs
@@ -620,7 +628,7 @@ const cardController = {
 					{
 						$match: {
 							winrate: { $gt: threshold },
-							total: { $gte: 5 } // Adicionando um mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
+							total: { $gte: 5 } // Mínimo de 5 batalhas para filtrar dados estatísticos mais relevantes
 						}
 					},
 
@@ -706,8 +714,10 @@ const cardController = {
 				totalMatchingDecks: totalMatchingDecks,
 				decks: enrichedDecks
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar melhores decks:', error);
+
 			return res.status(500).json({
 				error: 'Erro ao buscar melhores decks',
 				details: error.message
@@ -734,7 +744,7 @@ const cardController = {
 				});
 			}
 
-			// Processa o parâmetro combo para extrair os dois nomes de cartas
+			// Extrair os dois nomes de cartas
 			let comboArray;
 			try {
 				// Tenta converter de JSON
@@ -749,7 +759,7 @@ const cardController = {
 				comboArray = combo.split(',').map(item => item.trim());
 			}
 
-			// Verifica se temos exatamente duas cartas
+			// Verifica se tem exatamente duas cartas
 			if (comboArray.length !== 2) {
 				return res.status(400).json({
 					error: 'O combo deve conter exatamente duas cartas'
@@ -760,7 +770,7 @@ const cardController = {
 			const start = new Date(startDate);
 			const end = new Date(endDate);
 
-			// Buscar informações das cartas incluindo suas imagens
+			// Buscar informações das cartas e suas imagens
 			const cardDetails = await mongoose.connection.db
 				.collection('cards')
 				.find({ name: { $in: comboArray } })
@@ -787,7 +797,7 @@ const cardController = {
 				});
 			}
 
-			// Constrói o pipeline para agregação
+			// Pipeline
 			const pipeline = [
 				{
 					$match: {
@@ -840,7 +850,7 @@ const cardController = {
 				}
 			];
 
-			// Executa a agregação
+			// Conexão e Agregação
 			const result = await mongoose.connection.db
 				.collection('battles')
 				.aggregate(pipeline)
@@ -871,7 +881,7 @@ const cardController = {
 		try {
 			const { cardId, trophyPercentage, matchDuration, towersDestroyed } = req.query;
 
-			// Validação de parâmetros obrigatórios
+			// Validação dos parâmetros obrigatórios
 			if (!cardId || !trophyPercentage || !matchDuration || !towersDestroyed) {
 				return res.status(400).json({
 					error: 'Parâmetros obrigatórios não fornecidos',
@@ -882,10 +892,10 @@ const cardController = {
 			// Converter parâmetros para números
 			const cardIdNumber = parseInt(cardId);
 			const trophyPercent = parseFloat(trophyPercentage);
-			const duration = parseInt(matchDuration); // mantido para compatibilidade mas não usado
+			const duration = parseInt(matchDuration); 
 			const towers = parseInt(towersDestroyed);
 
-			// Verificar se a carta existe
+			// Conexão e Busca
 			const cardExists = await mongoose.connection.db
 				.collection('cards')
 				.findOne({ id: cardIdNumber });
@@ -901,6 +911,7 @@ const cardController = {
 				.collection('battles')
 				.countDocuments();
 
+			// Buscar batalhas com a carta
 			const battlesWithCard = await mongoose.connection.db
 				.collection('battles')
 				.countDocuments({
@@ -910,6 +921,7 @@ const cardController = {
 					]
 				});
 
+			// Buscar vitórias com a carta
 			const winningBattles = await mongoose.connection.db
 				.collection('battles')
 				.countDocuments({
@@ -925,7 +937,7 @@ const cardController = {
 					]
 				});
 
-			// Pipeline de agregação para encontrar vitórias que atendem aos critérios
+			// Pipeline para encontrar vitórias que atendem aos critérios
 			const finalPipeline = [
 				// 1. Filtrar por vitórias com a carta específica
 				{
@@ -1043,7 +1055,7 @@ const cardController = {
 				.aggregate(finalPipeline)
 				.toArray();
 
-			// Formatar e retornar a resposta
+			// Formatar e retornar resposta
 			return res.json({
 				card: {
 					id: cardIdNumber,
@@ -1069,6 +1081,7 @@ const cardController = {
 				error: 'Erro ao processar consulta de vitórias',
 				details: error.message
 			});
+
 		}
 	},
 
@@ -1091,11 +1104,9 @@ const cardController = {
 			const threshold = parseFloat(winRateThreshold) / 100; // Converter percentual para decimal
 
 			// Corrigir problema de timezone nas datas
-			// Para a data inicial, garantimos que seja o início do dia (00:00:00) no fuso horário local
 			const startParts = startDate.split('-').map(Number);
 			const start = new Date(startParts[0], startParts[1] - 1, startParts[2], 0, 0, 0);
 
-			// Para a data final, garantimos que seja o final do dia (23:59:59) no fuso horário local
 			const endParts = endDate.split('-').map(Number);
 			const end = new Date(endParts[0], endParts[1] - 1, endParts[2], 23, 59, 59);
 
@@ -1106,13 +1117,14 @@ const cardController = {
 				});
 			}
 
+			// Validar valores
 			if (isNaN(threshold) || threshold < 0 || threshold > 1) {
 				return res.status(400).json({
 					error: 'Taxa de vitória inválida. Deve ser entre 0 e 100%'
 				});
 			}
 
-			// Definir limite de combinações por batalha para evitar explosão combinatória
+			// Limite de combinações por batalha para evitar explosão combinatória
 			const MAX_COMBOS_POR_BATALHA = 100;
 
 			// Buscar apenas batalhas no intervalo de datas
@@ -1204,10 +1216,10 @@ const cardController = {
 				}))
 				.filter(combo => combo.winRate >= threshold * 100 && combo.totalBattles >= 5);
 
-			// Armazene o total de combos que atendem ao critério
+			// Total de combos que atendem ao critério
 			const totalMatchingCombos = comboResults.length;
 
-			// Depois continue com a ordenação e o limite
+			// Ordenação e limite
 			const top10Combos = comboResults
 				.sort((a, b) => b.winRate - a.winRate || b.totalBattles - a.totalBattles)
 				.slice(0, 10);
@@ -1296,7 +1308,7 @@ const cardController = {
 	// Função para buscar todas as cartas com seus nomes e IDs
 	async getAllCards(req, res) {
 		try {
-			// Buscar todas as cartas da coleção, projetando apenas nome e ID
+			// Buscar todas as cartas da coleção
 			const cards = await mongoose.connection.db
 				.collection('cards')
 				.find({})
@@ -1316,12 +1328,15 @@ const cardController = {
 				count: cards.length,
 				cards
 			});
+
 		} catch (error) {
 			console.error('Erro ao buscar lista de cartas:', error);
+			
 			return res.status(500).json({
 				error: 'Erro ao buscar lista de cartas',
 				details: error.message
 			});
+
 		}
 	},
 };
