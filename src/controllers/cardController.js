@@ -739,9 +739,11 @@ const cardController = {
 			try {
 				// Tenta converter de JSON
 				comboArray = JSON.parse(combo);
+
 				if (!Array.isArray(comboArray)) {
 					comboArray = [combo];
 				}
+
 			} catch (e) {
 				// Se não for JSON, divide por vírgula
 				comboArray = combo.split(',').map(item => item.trim());
@@ -1076,7 +1078,6 @@ const cardController = {
 			// Obter parâmetros
 			const { comboSize, winRateThreshold, startDate, endDate } = req.query;
 
-
 			// Validação de parâmetros
 			if (!comboSize || !startDate || !endDate || !winRateThreshold) {
 				return res.status(400).json({
@@ -1085,7 +1086,7 @@ const cardController = {
 				});
 			}
 
-			// Converter strings para números/datas - com ajuste de fuso horário
+			// Converter strings para números/datas 
 			const size = parseInt(comboSize);
 			const threshold = parseFloat(winRateThreshold) / 100; // Converter percentual para decimal
 
@@ -1195,7 +1196,6 @@ const cardController = {
 				battlesProcessed++;
 			}
 
-			
 			// Calcular taxa de vitória e filtrar por threshold
 			const comboResults = Array.from(comboMap.values())
 				.map(combo => ({
@@ -1282,8 +1282,10 @@ const cardController = {
 			};
 
 			return res.json(response);
+
 		} catch (error) {
 			console.error('Erro ao buscar combos vencedores:', error);
+
 			return res.status(500).json({
 				error: 'Erro ao processar a busca de combos',
 				details: error.message
