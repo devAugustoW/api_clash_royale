@@ -1,16 +1,18 @@
 import express from 'express';
+import dotenv from 'dotenv';
 import cors from 'cors';
 import './config/database';
 import battleRoutes from './routes/battleRoutes';
 import cardRoutes from './routes/cardRoutes';
 import playerRoutes from './routes/playerRoutes';
 
+dotenv.config();
 const app = express();
 
-// Configuração do CORS
+// CORS
 app.use(cors({
-  origin: 'http://localhost:5173', 
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  origin: `${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}`, 
+  methods: ['GET'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 

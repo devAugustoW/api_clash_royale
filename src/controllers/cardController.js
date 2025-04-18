@@ -1195,6 +1195,7 @@ const cardController = {
 				battlesProcessed++;
 			}
 
+			
 			// Calcular taxa de vitória e filtrar por threshold
 			const comboResults = Array.from(comboMap.values())
 				.map(combo => ({
