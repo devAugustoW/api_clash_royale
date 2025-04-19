@@ -2,11 +2,11 @@
 
 ![Clash Royale Banner](https://supercell.com/images/c96611b5b4ccd331e2b4dcb797811894/1281/hero_bg_clashroyale.612fcf42.webp)
 
-Este projeto é uma API desenvolvida em Node.js que se comunica com um banco de dados MongoDB. A API fornece informações sobre o jogo Clash Royale, permitindo a extração de dados e estatísticas relevantes.
+Este projeto é uma API desenvolvida em Node.js que se comunica com um banco de dados, repleto de informações sobre o Jogo Clash Royale, no MongoDB . Este Banco de Dados foi uma feito atravéz de uma extração de dados da prórpia API oficial do Jogo Clash Royale. Os dados foram extraídos, salvos em um Data Lake, manipulados, limpados, reorganizados em um novo Dataset e salvos no MongoDB para realização de pesquisas analíticas sobre o jogo.
 
 ## Estudo das Collections Battles, Cards e Players
 
-Iniciamos os estudos da estrutura dos dados no MongoDB através das rotas: `/api/battles`, `/api/cards`, `/api/players` e funções `getFirstOne`, `getTwoCards`, e `getTwoPlayers`. Assim, pude entender como os dados estavam dispostos, que tipo de informações eu poderia extrair e o caminho para responder as perguntas do professor.
+Iniciamos os estudos da estrutura das collections no MongoDB através das rotas: `/api/battles`, `/api/cards`, `/api/players` e funções `getFirstOne`, `getTwoCards`, e `getTwoPlayers`. Assim, pude entender como os dados estavam dispostos, que tipo de informações eu poderia extrair e o caminho para realizar consultas e pesquisas.
 
 ## ✅ Pergunta 01
 
