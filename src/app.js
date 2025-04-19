@@ -11,7 +11,7 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: `${process.env.FRONTEND_HOST}:${process.env.FRONTEND_PORT}`, 
+  origin: `${process.env.FRONTEND_HOST}`, 
   methods: ['GET'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
