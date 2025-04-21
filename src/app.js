@@ -11,7 +11,7 @@ const app = express();
 
 // CORS
 app.use(cors({
-  origin: `${process.env.FRONTEND_HOST}`, 
+  origin: process.env.FRONTEND_HOST.split(','),
   methods: ['GET'],
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
