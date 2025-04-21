@@ -2,7 +2,7 @@
 
 ![Clash Royale Banner](https://supercell.com/images/c96611b5b4ccd331e2b4dcb797811894/1281/hero_bg_clashroyale.612fcf42.webp)
 
-Este projeto faz parte de uma atividade da Disciplina de Banco de Dados da Faculdade Senac. Inicialmente ela seria para responder a cinco perguntas, mas o projeto saiu encorpado e além das 5 perguntas tráz análises e pesquisas personalizadas sobre os 100 melhores jogadores da temporada de Fevereiro a final de Março de 2025. 
+Este projeto faz parte de uma atividade da Disciplina de Banco de Dados da Faculdade Senac. Inicialmente a atividade seria para responder a cinco perguntas, mas o projeto ganhou forma e foi muito além das 5 perguntas. Trazendo análises e pesquisas personalizadas sobre os 100 melhores jogadores da temporada de Fevereiro a final de Março de 2025. 
 
 
 A API foi desenvolvida em Node.js, ela se comunica com um banco de dados no MongoDB que está repleto de informações sobre o Jogo Clash Royale. Este Banco de Dados foi uma feito atravéz de uma extração de dados da API oficial do Jogo Clash Royale. Os dados foram extraídos, salvos em um Data Lake, manipulados, limpados, reorganizados em um novo Dataset e salvos no MongoDB para realização de pesquisas analíticas sobre o jogo.
